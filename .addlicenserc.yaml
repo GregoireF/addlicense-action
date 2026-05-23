@@ -12,7 +12,8 @@ ignore:
   - "*.pb.go"
   - "*.gen.go"
   # documentation — markdown files don't carry inline license headers
-  - "**/*.md"
+  # Note: scanner matches against d.Name() (basename), so *.md catches all depths.
+  - "*.md"
   - LICENSE
   # config / dotfiles — no comment syntax
   - .gitignore

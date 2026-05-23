@@ -42,8 +42,8 @@ Create `.addlicenserc.yaml` at the repo root:
 license: MIT
 copyright: "Acme Corp"
 ignore:
-  - "**/*.md"
-  - "LICENSE"
+  - "*.md"
+  - "*.txt"
 ```
 
 Then simply:
