@@ -1,7 +1,9 @@
+# SPDX-License-Identifier: MIT
+# Copyright 2026 Grégoire Favreau
 name: Tag Release
 
 # Triggered by the addlicense core repo after a successful GoReleaser run.
-# Payload: { "version": "v1.1.0" }
+# Payload: { "version": "v1.2.0" }
 on:
   repository_dispatch:
     types: [addlicense-released]
@@ -10,36 +12,66 @@ permissions:
   contents: write
 
 jobs:
-  tag:
-    name: Create release tag
+  release:
+    name: Create release
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          fetch-depth: 0
 
-      - name: Extract version
-        id: version
+      - name: Compute version metadata
+        id: meta
         run: |
           VERSION="${{ github.event.client_payload.version }}"
+          MAJOR="v$(echo "${VERSION#v}" | cut -d. -f1)"
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
-          echo "Tagging action at ${VERSION}"
+          echo "major=${MAJOR}"     >> "$GITHUB_OUTPUT"
+          echo "date=$(date -u +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
 
       - name: Update CHANGELOG
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
+          DATE:    ${{ steps.meta.outputs.date }}
         run: |
-          VERSION="${{ steps.version.outputs.version }}"
-          DATE=$(date +%Y-%m-%d)
-          ENTRY="## ${VERSION} — ${DATE}\nSynced with [addlicense ${VERSION}](https://github.com/GregoireF/addlicense/releases/tag/${VERSION}).\n"
-          # Prepend to CHANGELOG after the header line
-          sed -i "s/^## \[Unreleased\]/## [Unreleased]\n\n${ENTRY}/" CHANGELOG.md || true
+          python3 << 'EOF'
+          import os
+          v, d = os.environ['VERSION'], os.environ['DATE']
+          entry = f'\n## {v} — {d}\nSynced with [addlicense {v}](https://github.com/GregoireF/addlicense/releases/tag/{v}).\n'
+          c = open('CHANGELOG.md').read().replace('## [Unreleased]', '## [Unreleased]' + entry, 1)
+          open('CHANGELOG.md', 'w').write(c)
+          EOF
 
-      - name: Commit CHANGELOG
+      - name: Bump ADDLICENSE_VERSION in ci.yml
+        run: |
+          VERSION="${{ steps.meta.outputs.version }}"
+          sed -i "s/  ADDLICENSE_VERSION: .*/  ADDLICENSE_VERSION: ${VERSION}/" .github/workflows/ci.yml
+
+      - name: Commit and push to main
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add CHANGELOG.md
-          git diff --staged --quiet || git commit -m "chore(release): sync ${{ steps.version.outputs.version }}"
+          git add CHANGELOG.md .github/workflows/ci.yml
+          git diff --staged --quiet && echo "Nothing to commit" && exit 0
+          git commit -m "chore(release): sync ${{ steps.meta.outputs.version }}"
+          git push origin main
 
-      - name: Create and push tag
+      - name: Create versioned tag
         run: |
-          VERSION="${{ steps.version.outputs.version }}"
-          git tag "$VERSION"
-          git push origin main "$VERSION"
+          git tag "${{ steps.meta.outputs.version }}"
+          git push origin "${{ steps.meta.outputs.version }}"
+
+      - name: Update floating major tag
+        run: |
+          git tag -f "${{ steps.meta.outputs.major }}"
+          git push origin "${{ steps.meta.outputs.major }}" --force
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.meta.outputs.version }}
+          DATE:    ${{ steps.meta.outputs.date }}
+        run: |
+          gh release create "$VERSION" \
+            --title "$VERSION" \
+            --notes "Synced with [addlicense ${VERSION}](https://github.com/GregoireF/addlicense/releases/tag/${VERSION}) — ${DATE}."

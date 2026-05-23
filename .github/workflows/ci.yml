@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright 2026 Grégoire Favreau
 name: CI
 
 on:
@@ -6,50 +8,43 @@ on:
   pull_request:
     branches: [main]
 
+# Version of the addlicense binary used in tests.
+# Updated automatically by tag-release.yml on each new core release.
+env:
+  ADDLICENSE_VERSION: v1.0.0
+
 jobs:
   commitlint:
     name: Commitlint
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 20
       - run: npm install --save-dev @commitlint/cli @commitlint/config-conventional
       - run: npx commitlint --from ${{ github.event.pull_request.base.sha }} --to ${{ github.event.pull_request.head.sha }}
 
-  test-linux:
-    name: Test (Linux amd64)
-    runs-on: ubuntu-latest
+  test:
+    name: Test (${{ matrix.os }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: Linux amd64
+            runner: ubuntu-latest
+          - os: macOS arm64
+            runner: macos-latest
+          - os: Windows amd64
+            runner: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - name: Run action — check mode
         uses: ./
         with:
           args: --check .
-          version: v1.0.0
-
-  test-macos:
-    name: Test (macOS arm64)
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Run action — check mode
-        uses: ./
-        with:
-          args: --check .
-          version: v1.0.0
-
-  test-windows:
-    name: Test (Windows amd64)
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Run action — check mode
-        uses: ./
-        with:
-          args: --check .
-          version: v1.0.0
+          version: ${{ env.ADDLICENSE_VERSION }}
