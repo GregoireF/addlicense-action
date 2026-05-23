@@ -47,14 +47,19 @@ jobs:
           VERSION="${{ steps.meta.outputs.version }}"
           sed -i "s/  ADDLICENSE_VERSION: .*/  ADDLICENSE_VERSION: ${VERSION}/" .github/workflows/ci.yml
 
-      - name: Commit and push to main
+      - name: Commit CHANGELOG and ci.yml
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add CHANGELOG.md .github/workflows/ci.yml
           git diff --staged --quiet && echo "Nothing to commit" && exit 0
           git commit -m "chore(release): sync ${{ steps.meta.outputs.version }}"
-          git push origin main
+
+      - name: Push to main
+        # Branch protection may block direct pushes from github-actions[bot].
+        # Tag creation and GitHub release are the critical path; this is best-effort.
+        continue-on-error: true
+        run: git push origin main
 
       - name: Create versioned tag
         run: |
