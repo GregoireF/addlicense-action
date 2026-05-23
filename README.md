@@ -36,7 +36,7 @@ jobs:
 
 ### Add headers with a config file
 
-Create `.addlicense.yaml` at the repo root:
+Create `.addlicenserc.yaml` at the repo root:
 
 ```yaml
 license: MIT
