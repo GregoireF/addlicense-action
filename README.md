@@ -3,6 +3,8 @@
 > GitHub Action — add, check, update and remove SPDX license headers.
 
 [![CI](https://github.com/GregoireF/addlicense-action/actions/workflows/ci.yml/badge.svg)](https://github.com/GregoireF/addlicense-action/actions/workflows/ci.yml)
+[![GitHub release](https://img.shields.io/github/v/release/GregoireF/addlicense-action?label=release)](https://github.com/GregoireF/addlicense-action/releases/latest)
+[![GitHub Marketplace](https://img.shields.io/badge/Marketplace-addlicense-blue?logo=github)](https://github.com/marketplace/actions/addlicense)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 Wraps [GregoireF/addlicense](https://github.com/GregoireF/addlicense) — the Go CLI — as a GitHub Action. Downloads the correct binary for the runner OS and architecture at runtime; no Docker, no Go required.
