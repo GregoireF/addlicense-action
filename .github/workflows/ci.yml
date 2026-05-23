@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  commitlint:
+    name: Commitlint
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install --save-dev @commitlint/cli @commitlint/config-conventional
+      - run: npx commitlint --from ${{ github.event.pull_request.base.sha }} --to ${{ github.event.pull_request.head.sha }}
+
+  test-linux:
+    name: Test (Linux amd64)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run action — check mode
+        uses: ./
+        with:
+          args: --check .
+          version: v1.0.0
+
+  test-macos:
+    name: Test (macOS arm64)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run action — check mode
+        uses: ./
+        with:
+          args: --check .
+          version: v1.0.0
+
+  test-windows:
+    name: Test (Windows amd64)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run action — check mode
+        uses: ./
+        with:
+          args: --check .
+          version: v1.0.0
