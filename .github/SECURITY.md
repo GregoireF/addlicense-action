@@ -32,5 +32,5 @@ Please include:
 | Control | Trigger |
 |---|---|
 | All action `uses:` pinned to commit SHA | Every workflow run |
-| Dependabot (GitHub Actions + npm) | Weekly |
+| Dependabot (GitHub Actions) | Weekly |
 | `CODEOWNERS` review required on all PRs | Every pull request |
