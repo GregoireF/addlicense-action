@@ -1,7 +1,10 @@
 # SPDX-License-Identifier: MIT
 # Copyright 2026 Grégoire Favreau
 name: addlicense
-description: 'Fast, minimal license header manager — add, check, update, and remove SPDX headers'
+description: >
+  Add, check, update, and remove SPDX license headers across a repository.
+  Downloads the pre-built binary from GitHub Releases — no Go toolchain required.
+  Supports Linux, macOS, and Windows on amd64 and arm64.
 author: 'GregoireF'
 
 branding:
@@ -11,21 +14,49 @@ branding:
 inputs:
   args:
     description: >
-      Arguments passed directly to addlicense.
-      Defaults to --check . (CI enforcement mode).
+      Arguments forwarded verbatim to the addlicense binary.
+
+      Common patterns:
+
+        --check .                      Check all files; fails if any header is missing (default).
+        --check cmd/ internal/         Limit scope to specific directories.
+        --license MIT --author "Acme"  Inject MIT headers for a given author.
+        --update .                     Update existing headers (year, author) without re-injecting.
+        --remove .                     Strip all license headers.
+        --ignore "*.pb.go" .           Ignore generated files.
+        --format json --check .        Machine-readable output.
+        --sbom sbom.spdx .             Generate an SPDX 2.3 bill of materials.
+
+      Pass an empty string ('') to install the binary without running it;
+      subsequent steps can then call addlicense directly with custom arguments.
     required: false
     default: '--check .'
+
   version:
     description: >
-      Override the release version to download (e.g. "v1.0.0").
-      Defaults to the action tag (github.action_ref).
+      Version of the addlicense binary to download (e.g. "v1.0.1").
+
+      When the action is referenced by a release tag (e.g. uses: GregoireF/addlicense-action@v1),
+      this defaults to that tag and no override is needed.
+
+      Set this explicitly when:
+        - Testing the action from a branch with uses: ./
+        - Pinning to a specific CLI version independently of the action tag
+        - Running the action in a workflow_dispatch with a version input
     required: false
     default: ''
+
+outputs:
+  version:
+    description: >
+      The resolved version of addlicense that was installed (e.g. "v1.0.1").
+      Useful for logging, caching keys, or conditional steps.
+    value: ${{ steps.install.outputs.version }}
 
 runs:
   using: composite
   steps:
-    - name: Resolve platform identifiers
+    - name: Resolve platform
       id: platform
       shell: bash
       run: |
@@ -33,15 +64,16 @@ runs:
           Linux)   echo "os=linux"   >> "$GITHUB_OUTPUT" ;;
           macOS)   echo "os=darwin"  >> "$GITHUB_OUTPUT" ;;
           Windows) echo "os=windows" >> "$GITHUB_OUTPUT" ;;
-          *)       echo "Unsupported OS: ${{ runner.os }}" >&2; exit 1 ;;
+          *)       echo "::error::Unsupported OS: ${{ runner.os }}"; exit 1 ;;
         esac
         case "${{ runner.arch }}" in
           X64)   echo "arch=amd64" >> "$GITHUB_OUTPUT" ;;
           ARM64) echo "arch=arm64" >> "$GITHUB_OUTPUT" ;;
-          *)     echo "Unsupported arch: ${{ runner.arch }}" >&2; exit 1 ;;
+          *)     echo "::error::Unsupported arch: ${{ runner.arch }}"; exit 1 ;;
         esac
 
-    - name: Download and install addlicense
+    - name: Download addlicense ${{ inputs.version || github.action_ref }}
+      id: install
       shell: bash
       env:
         VERSION_INPUT: ${{ inputs.version }}
@@ -51,12 +83,11 @@ runs:
       run: |
         VERSION="${VERSION_INPUT:-$ACTION_REF}"
         if [[ ! "$VERSION" =~ ^v[0-9] ]]; then
-          echo "::error::Cannot determine release version from '${VERSION}'. Set the 'version' input explicitly." >&2
+          echo "::error::Cannot resolve version from '${VERSION}'. Set the 'version' input explicitly when using the action from a branch."
           exit 1
         fi
         dest="${RUNNER_TEMP}/addlicense-bin"
         mkdir -p "$dest"
-
         if [ "$OS" = "windows" ]; then
           archive="addlicense_${OS}_${ARCH}.zip"
           url="https://github.com/GregoireF/addlicense/releases/download/${VERSION}/${archive}"
@@ -67,8 +98,8 @@ runs:
           url="https://github.com/GregoireF/addlicense/releases/download/${VERSION}/${archive}"
           curl -sSfL "$url" | tar -xz -C "$dest"
         fi
-
         echo "$dest" >> "$GITHUB_PATH"
+        echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
 
     - name: Run addlicense
       if: inputs.args != ''
