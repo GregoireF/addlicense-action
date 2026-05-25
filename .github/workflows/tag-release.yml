@@ -51,8 +51,6 @@ jobs:
           git commit -m "chore(release): sync ${{ steps.meta.outputs.version }}"
 
       - name: Push to main
-        # Branch protection may block direct pushes from github-actions[bot].
-        # Tag creation and GitHub release are the critical path; this is best-effort.
         continue-on-error: true
         run: git push origin main
 
