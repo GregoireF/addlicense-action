@@ -11,7 +11,7 @@ on:
 # Version of the addlicense binary used in tests.
 # Updated automatically by tag-release.yml on each new core release.
 env:
-  ADDLICENSE_VERSION: v1.0.0
+  ADDLICENSE_VERSION: v1.0.1
 
 jobs:
   commitlint:

@@ -5,6 +5,9 @@ Releases are created automatically when [addlicense](https://github.com/Gregoire
 
 ## [Unreleased]
 
+## v1.0.1 — 2026-05-25
+Synced with [addlicense v1.0.1](https://github.com/GregoireF/addlicense/releases/tag/v1.0.1).
+
 ## v1.0.0 — 2026-05-22
 Initial release. Wraps [addlicense v1.0.0](https://github.com/GregoireF/addlicense/releases/tag/v1.0.0).
 
